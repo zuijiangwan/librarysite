@@ -15,7 +15,7 @@ class UserAPP extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: is_admin ? AdminPage() : StudentPage(userid: userid),
+      home: is_admin ? AdminPage(userid: userid) : StudentPage(userid: userid),
     );
   }
 }

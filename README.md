@@ -1,4 +1,4 @@
-# 说明书
+# 指令说明
 前端启动命令：
 ```shell
 flutter run -d edge --web-hostname 127.0.0.1 --web-port 3000

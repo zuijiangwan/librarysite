@@ -12,47 +12,20 @@ class StudentPage extends StatefulWidget {
   _StudentPageState createState() => _StudentPageState(userid: userid);
 }
 
-class UserInfo {
-  String name;
-  String studentId;
-
-  UserInfo({required this.name, required this.studentId});
-}
-
-class SearchResult {
-  final String title;
-  final String description;
-
-  SearchResult({required this.title, required this.description});
-}
-
 class _StudentPageState extends State<StudentPage> {
   final String userid; // 存储用户id
-  UserInfo userInfo = UserInfo(name: '', studentId: ''); // 用户信息
   final TextEditingController searchController = TextEditingController();
-  List<SearchResult> searchResults = [];
+  List<dynamic> searchResults = [];
 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Student'),
+        title: Text(userid),
+        centerTitle: true,
+        backgroundColor: Colors.blue,
       ),
       body: Row(
         children: [
-          Expanded(
-            flex: 1,
-            child: Container(
-              padding: EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Name: ${userInfo.name}'),
-                  Text('Student ID: ${userInfo.studentId}'),
-                  // 更多基本信息...
-                ],
-              ),
-            ),
-          ),
           Expanded(
             flex: 2,
             child: Column(
@@ -62,10 +35,13 @@ class _StudentPageState extends State<StudentPage> {
                   child: TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      labelText: 'Search',
+                      labelText: 'Search books',
                       suffixIcon: IconButton(
-                        onPressed: () {
-                          searchBook();
+                        onPressed: () async {
+                          Map<String, dynamic> data = jsonDecode(await request(userid, 'search_book', {'keyword': searchController.text}));
+                          setState(() {
+                            searchResults = data['storage_info_list'];
+                          });
                         },
                         icon: Icon(Icons.search),
                       ),
@@ -77,8 +53,33 @@ class _StudentPageState extends State<StudentPage> {
                     itemCount: searchResults.length,
                     itemBuilder: (context, index) {
                       return ListTile(
-                        title: Text(searchResults[index].title),
-                        subtitle: Text(searchResults[index].description),
+                        leading: Image.network(
+                          "http://127.0.0.1:8000/static${searchResults[index]['storage_cover']}",
+                          width: 100.0,
+                        ),
+                        title: Text(searchResults[index]['book_name']),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('作者: ${searchResults[index]['book_author']}'),
+                            Text('书号: ${searchResults[index]['book_id']}'),
+                            Text('出版社: ${searchResults[index]['storage_publish']}'),
+                            Text('出版时间: ${searchResults[index]['storage_publish_time']}'),
+                            Text(searchResults[index]['storage_status'] == true ? '状态：外借' : '状态：在馆'),
+                          ],
+                        ),
+                        trailing: ElevatedButton(
+                          onPressed: () {
+                            if (searchResults[index]['storage_state'] == 'False') {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('该书在馆，可直接借阅')));
+                              return;
+                            }
+                            request(userid, 'reserve_book', {'student_id': userid,'storage_id': searchResults[index]['storage_id']}).then((value) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
+                            });
+                          },
+                          child: Text('预约'),
+                        ),
                       );
                     },
                   ),
@@ -91,22 +92,5 @@ class _StudentPageState extends State<StudentPage> {
     );
   }
 
-  _StudentPageState({required this.userid}){
-    // 请求用户信息
-    get_user_info();
-  }
-
-  Future<void> get_user_info() async{
-    Map<String, dynamic> data = jsonDecode(await request(userid, 'get_student_info', {}));
-    userInfo.name = data['student_name'];
-    userInfo.studentId = data['student_id'];
-  }
-
-  Future<void> searchBook() async{
-    Map<String, dynamic> data = jsonDecode(await request(userid, 'search_book', {'keyword': searchController.text}));
-    searchResults = [];
-    for (var item in data['books']) {
-      searchResults.add(SearchResult(title: item['title'], description: item['description']));
-    }
-  }
+  _StudentPageState({required this.userid});
 }

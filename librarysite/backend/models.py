@@ -48,7 +48,6 @@ class BorrowRelation(models.Model):
     storage_id = models.ForeignKey(StorageInfo, on_delete=models.CASCADE, primary_key=True) # 条形码，外键
     borrow_date = models.DateField() # 借书日期
     return_date = models.DateField() # 应还日期
-    is_overdue = models.BooleanField() # 是否逾期
 
 # 预约关系
 class ReserveRelation(models.Model):
